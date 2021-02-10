@@ -96,13 +96,13 @@ class Timestamp:
         elif has_bson and isinstance(other, bson.ObjectId):
             other = self.fromdatetime(other.generation_time.replace(tzinfo=None))
 
-        if self.isdate(other):
+        if self.is_date(other):
             return eval(f'self.date {sign} other')
-        elif self.isdatetime(other):
+        elif self.is_datetime(other):
             if not other.tzinfo:
                 return eval(f'self.naive {sign} other')
             return eval(f'self.datetime {sign} other')
-        elif self.isself(other):
+        elif self.is_self(other):
             return eval(f'self.datetime {sign} other.datetime')
 
     def __format__(self, fmt):
@@ -155,11 +155,11 @@ class Timestamp:
         )
 
     def __rsub__(self, other):
-        if self.isself(other):
+        if self.is_self(other):
             return other._dt - self._dt
-        elif self.isdate(other):
+        elif self.is_date(other):
             return other - self.date
-        elif self.isdatetime(other):
+        elif self.is_datetime(other):
             if other.tzinfo:
                 return other - self.dateime
             return other - self.naive
@@ -171,11 +171,11 @@ class Timestamp:
     def __sub__(self, other):
         if isinstance(other, (timedelta, relativedelta)):
             return self.fromdatetime(self._dt - other, tzinfo=self.tzinfo)
-        elif self.isself(other):
+        elif self.is_self(other):
             return self._dt - other._dt
-        elif self.isdate(other):
+        elif self.is_date(other):
             return self.date - other
-        elif self.isdatetime(other):
+        elif self.is_datetime(other):
             if other.tzinfo:
                 return self.dateime - other
             return self.naive - other
@@ -418,9 +418,9 @@ class Timestamp:
 
     def isbetween(self, start, end, bounds='()'):
         util.validate_bounds(bounds)
-        if not self.isconvertable(start):
+        if not self.is_convertable(start):
             raise ValueError(f'not DateTool convertable: {start!r}')
-        if not self.isconvertable(end):
+        if not self.is_convertable(end):
             raise ValueError(f'not DateTool convertable: {end!r}')
         start = self.get(start)
         end = self.get(end)
@@ -526,7 +526,7 @@ class Timestamp:
         tzinfo = self.tzparser(tz, **kwargs)
         return self.fromdatetime(self.astimezone(tzinfo), **kwargs)
 
-    def toutc(self):
+    def to_utc(self):
         return self.to('UTC')
 
     #################
@@ -535,7 +535,7 @@ class Timestamp:
 
     @classmethod
     def fromdate(cls, d, tzinfo=None, **kwargs):
-        if not cls.isdate(d):
+        if not cls.is_date(d):
             raise ValueError(f'invalid date: {d!r}')
         return cls(
             d.year,
@@ -547,7 +547,7 @@ class Timestamp:
 
     @classmethod
     def fromdatetime(cls, dt, tzinfo=None, **kwargs):
-        if not cls.isdatetime(dt):
+        if not cls.is_datetime(dt):
             raise ValueError(f'invalid datetime: {dt!r}')
         return cls(
             dt.year,
@@ -568,7 +568,7 @@ class Timestamp:
 
     @classmethod
     def fromtimestamp(cls, value, tzinfo=None, **kwargs):
-        if not cls.istimestamp(value):
+        if not cls.is_timestamp(value):
             raise ValueError(f'invalid timestamp: {value!r}')
         timestamp = util.validate_timestamp(float(value))
         tzinfo = cls.tzparser(tzinfo, **kwargs)
@@ -576,7 +576,7 @@ class Timestamp:
 
     @classmethod
     def get(cls, d, tzinfo=None, default=None, **kwargs):
-        if cls.isself(d):
+        if cls.is_self(d):
             if tzinfo is None:
                 tzinfo = d.tzinfo
             else:
@@ -584,11 +584,11 @@ class Timestamp:
             return cls.fromdatetime(d._dt, tzinfo=tzinfo, **kwargs)
 
         tzinfo = cls.tzparser(tzinfo, **kwargs)
-        if cls.isdate(d):
+        if cls.is_date(d):
             return cls.fromdate(d, tzinfo=tzinfo, **kwargs)
-        elif cls.isdatetime(d):
+        elif cls.is_datetime(d):
             return cls.fromdatetime(d, tzinfo=tzinfo, **kwargs)
-        elif cls.istimestamp(d):
+        elif cls.is_timestamp(d):
             return cls.fromtimestamp(d, tzinfo=tzinfo, **kwargs)
         else:
             if isinstance(d, str):
@@ -622,14 +622,15 @@ class Timestamp:
                 return
 
     @classmethod
-    def isconvertable(cls, d):
+    def is_convertable(cls, d):
         return any([
-            cls.isself(d),
-            cls.isdateobject(d)
+            cls.is_self(d),
+            cls.is_dateobject(d),
+            cls.is_timestamp(d),
         ])
 
     @classmethod
-    def isself(cls, d):
+    def is_self(cls, d):
         return isinstance(d, cls)
 
     @classmethod
@@ -676,7 +677,7 @@ class Timestamp:
 
     @classmethod
     def spanrange(cls, frame, start, end, tz=None, limit=None, bounds='[)', exact=False):
-        if cls.isdatetime(start):
+        if cls.is_datetime(start):
             tzinfo = cls.tzparser(start.tzinfo if tz is None else tz)
         else:
             tzinfo = cls.tzparser(tz)
@@ -817,19 +818,19 @@ class Timestamp:
     ##################
 
     @staticmethod
-    def isdate(obj):
+    def is_date(obj):
         return isinstance(obj, date) and not isinstance(obj, datetime)
 
     @staticmethod
-    def isdatetime(obj):
+    def is_datetime(obj):
         return isinstance(obj, date) and isinstance(obj, datetime)
 
     @staticmethod
-    def isdateobject(obj):
+    def is_dateobject(obj):
         return isinstance(obj, date)
 
     @staticmethod
-    def istimestamp(obj):
+    def is_timestamp(obj):
         if obj is None or isinstance(obj, bool) or not isinstance(obj, (int, float, str)):
             return False
         try:
@@ -839,7 +840,7 @@ class Timestamp:
         return True
 
     @staticmethod
-    def istz(obj):
+    def is_tz(obj):
         return isinstance(obj, (dtz.tzutc, dtz.tzlocal, dtz.tzfile, dtz.tzoffset))
 
     @staticmethod
