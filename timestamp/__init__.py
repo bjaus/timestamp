@@ -576,32 +576,23 @@ class Timestamp:
 
     @classmethod
     def get(cls, d, tzinfo=None, default=None, **kwargs):
+        default = cls.xlate(default) if isinstance(default, str) else default
+        tzinfo = cls.tzparser(getattr(d, 'tzinfo', tzinfo) or tzinfo)
         if cls.is_self(d):
-            if tzinfo is None:
-                tzinfo = d.tzinfo
-            else:
-                tzinfo = cls.tzparser(tzinfo, **kwargs)
             return cls.fromdatetime(d._dt, tzinfo=tzinfo, **kwargs)
-
-        tzinfo = cls.tzparser(tzinfo, **kwargs)
-        if cls.is_date(d):
+        elif cls.is_date(d):
             return cls.fromdate(d, tzinfo=tzinfo, **kwargs)
         elif cls.is_datetime(d):
             return cls.fromdatetime(d, tzinfo=tzinfo, **kwargs)
         elif cls.is_timestamp(d):
             return cls.fromtimestamp(d, tzinfo=tzinfo, **kwargs)
         else:
-            if isinstance(d, str):
-                if d.isdigit():
-                    if len(d) == 6:
-                        d = '{}-{}'.format(d[:4], d[4:])
             try:
-                dt = dtp(d)
-            except (ParserError, ValueError):
+                return cls.get(dtp(d))
+            except (TypeError, ParserError):
                 if default == 'now':
                     return cls.now(tzinfo=tzinfo)
-                return default
-            return cls.fromdatetime(dt, tzinfo=dt.tzinfo or tzinfo)
+            return default
 
     @classmethod
     def interval(cls, frame, start, end, interval=1, tz=None, bounds='[)', exact=False):
