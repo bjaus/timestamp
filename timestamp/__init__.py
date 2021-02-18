@@ -106,7 +106,7 @@ class Timestamp:
             return eval(f'self.datetime {sign} other.datetime')
 
     def __format__(self, fmt):
-        if isinstance(fmt, str):
+        if fmt and isinstance(fmt, str):
             return self.format(fmt)
         return str(self)
 
