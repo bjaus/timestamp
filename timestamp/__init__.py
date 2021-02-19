@@ -577,7 +577,9 @@ class Timestamp:
     @classmethod
     def get(cls, d, tzinfo=None, default=None, **kwargs):
         default = cls.xlate(default) if isinstance(default, str) else default
-        tzinfo = cls.tzparser(getattr(d, 'tzinfo', tzinfo) or tzinfo)
+        if cls.is_datetime(d) and d.tzinfo:
+            tzinfo = tzinfo or d.tzinfo
+        tzinfo = cls.tzparser(tzinfo)
         if cls.is_self(d):
             return cls.fromdatetime(d._dt, tzinfo=tzinfo, **kwargs)
         elif cls.is_date(d):
@@ -588,7 +590,7 @@ class Timestamp:
             return cls.fromtimestamp(d, tzinfo=tzinfo, **kwargs)
         else:
             try:
-                return cls.get(dtp(d))
+                return cls.get(dtp(d), tzinfo=tzinfo)
             except (TypeError, ParserError):
                 if default == 'now':
                     return cls.now(tzinfo=tzinfo)
